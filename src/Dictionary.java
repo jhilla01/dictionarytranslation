@@ -7,18 +7,14 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Objects;
 
 public class Dictionary extends JFrame implements ActionListener {
     private final JComboBox<String> inputField;
-    private final AutocompleteComboBoxModel inputModel;
     private final JButton searchButton;
     private final JLabel translationLabel;
     private final JLabel imageLabel;
     private final JComboBox<String> languageSelector;
-
 
     private final String[] englishWords =
             {
@@ -53,71 +49,62 @@ public class Dictionary extends JFrame implements ActionListener {
     };
 
     public Dictionary() {
-        setTitle("Dictionary");
-        setSize(600, 400);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+            // Set JFrame properties
+            setTitle("Dictionary");
+            setSize(600, 400);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setLayout(new BorderLayout());
 
-        JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+            // Create a JPanel to hold the input components
+            JPanel inputPanel = new JPanel();
+            inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
 
-        inputModel = new AutocompleteComboBoxModel(englishWords);
-        inputField = new JComboBox<>(inputModel);
-        inputField.setEditable(true);
-        inputField.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() != KeyEvent.VK_ENTER) {
-                    String prefix = inputField.getEditor().getItem().toString();
-                    inputModel.updateSuggestions(prefix);
-                    inputField.showPopup();
-                }
-            }
-        });
-        inputField.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                inputModel.setShowingDropdown(true);
-            } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-                inputModel.setShowingDropdown(false);
-            }
-        });
+            // Create a JComboBox for language selection, a JComboBox for input, and a search JButton
+            languageSelector = new JComboBox<>(new String[]{"Spanish", "German", "Norwegian"});
+            inputField = new JComboBox<>(englishWords);
+            inputField.setEditable(true);
+            inputField.setSelectedIndex(-1);
+            searchButton = new JButton("Search");
 
-        searchButton = new JButton("Search");
-        languageSelector = new JComboBox<>(new String[]{"Spanish", "German", "Norwegian"});
+           // Add the components to the input panel
+            inputPanel.add(languageSelector);
+            inputPanel.add(inputField);
+            inputPanel.add(searchButton);
 
-        inputPanel.add(languageSelector);
-        inputPanel.add(inputField);
-        inputPanel.add(searchButton);
+            // Create JLabels for displaying translation and images
+            translationLabel = new JLabel();
+            imageLabel = new JLabel();
 
-        translationLabel = new JLabel();
-        imageLabel = new JLabel();
+            // Add an ActionListener to the search button
+            searchButton.addActionListener(this);
 
-        JList<String> wordList = new JList<>(englishWords);
-        wordList.addListSelectionListener(new ListSelectionListener() {
+            // Create a JPanel for displaying the translation and image
+            JPanel centerPanel = new JPanel(new BorderLayout());
+            centerPanel.add(translationLabel, BorderLayout.NORTH);
+            centerPanel.add(imageLabel, BorderLayout.CENTER);
+
+            // Create a JList for displaying the list of English words
+            JList<String> wordList = new JList<>(englishWords);
+            // Add a ListSelectionListener to the word list to update the input field when a word is selected
+            wordList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
-                    inputField.setSelectedItem(wordList.getSelectedValue());
-                    searchWord();
+                    // Get the selected word from the list and set it as the input field's selected item
+                    String selectedWord = wordList.getSelectedValue();
+                    if (selectedWord != null) {
+                        inputField.setSelectedItem(selectedWord);
+                    }
                 }
             }
-        });
-        JScrollPane wordListPane = new JScrollPane(wordList);
+            });
+            // Create a JScrollPane for the word list
+            JScrollPane wordListPane = new JScrollPane(wordList);
 
-        searchButton.addActionListener(this);
-
-        JPanel imagePanel = new JPanel(new BorderLayout());
-        imagePanel.add(translationLabel, BorderLayout.NORTH);
-        imagePanel.add(imageLabel, BorderLayout.CENTER);
-
-        add(inputPanel, BorderLayout.NORTH);
-        add(imagePanel, BorderLayout.CENTER);
-        add(wordListPane, BorderLayout.WEST);
-    }
-
-
-
-
+            add(inputPanel, BorderLayout.NORTH);
+            add(centerPanel, BorderLayout.CENTER);
+            add(wordListPane, BorderLayout.WEST);
+        }
 
 
     public void actionPerformed(ActionEvent e) {
@@ -127,9 +114,12 @@ public class Dictionary extends JFrame implements ActionListener {
     }
 
     private void searchWord() {
-        String input = inputField.getEditor().getItem().toString().toLowerCase();
+        // Get the input value and selected language from their respective JComboBoxes
+        String input = Objects.requireNonNull(inputField.getSelectedItem()).toString().toLowerCase();
+        // Search for the input word in the English word array
         boolean wordFound = false;
         int languageIndex = languageSelector.getSelectedIndex();
+        // Loop through the English words array and compare the input word to each word in the array
         for (int i = 0; i < englishWords.length; i++) {
             if (englishWords[i].equalsIgnoreCase(input)) {
                 wordFound = true;
@@ -137,9 +127,9 @@ public class Dictionary extends JFrame implements ActionListener {
 
                 try {
                     URL imageUrl = getClass().getResource("/images/" + imageFileNames[i]);
-                    Image image = ImageIO.read(imageUrl);
+                    assert imageUrl != null;
+                    BufferedImage image = ImageIO.read(imageUrl);
 
-                    // Scale the image to a smaller size
                     int newWidth = 250;
                     int newHeight = 250;
                     Image scaledImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
@@ -149,9 +139,11 @@ public class Dictionary extends JFrame implements ActionListener {
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
+
                 break;
             }
         }
+
         if (!wordFound) {
             translationLabel.setText("Word not found");
             imageLabel.setIcon(null);
